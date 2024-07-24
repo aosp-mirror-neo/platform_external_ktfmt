@@ -2032,6 +2032,60 @@ class KDocFormatterTest {
   }
 
   @Test
+  fun testNoReorderSample() {
+    val source =
+        """
+            /**
+             * Constructs a new location range for the given file, from start to
+             * end. If the length of the range is not known, end may be null.
+             *
+             * @sample abc
+             *
+             * You might want to see another sample.
+             *
+             * @sample xyz
+             *
+             * Makes sense?
+             * @return Something
+             * @see more
+             * @sample foo
+             *
+             * Note that samples after another tag don't get special treatment.
+             */
+            """
+            .trimIndent()
+    checkFormatter(
+        FormattingTask(
+            KDocFormattingOptions(72),
+            source,
+            "    ",
+            orderedParameterNames = listOf("file", "start", "end")),
+        """
+            /**
+             * Constructs a new location range for the given file, from start to
+             * end. If the length of the range is not known, end may be null.
+             *
+             * @sample abc
+             *
+             * You might want to see another sample.
+             *
+             * @sample xyz
+             *
+             * Makes sense?
+             *
+             * @return Something
+             * @sample foo
+             *
+             * Note that samples after another tag don't get special treatment.
+             *
+             * @see more
+             */
+            """
+            .trimIndent(),
+    )
+  }
+
+  @Test
   fun testKDocOrdering() {
     // From AndroidX'
     // frameworks/support/biometric/biometric-ktx/src/main/java/androidx/biometric/auth/CredentialAuthExtensions.kt
@@ -2892,9 +2946,9 @@ class KDocFormatterTest {
   @Test
   fun test193246766() {
     val source =
-    // Nonsensical text derived from the original using the lorem() method and
-    // replacing same-length & same capitalization words from lorem ipsum
-    """
+        // Nonsensical text derived from the original using the lorem() method and
+        // replacing same-length & same capitalization words from lorem ipsum
+        """
             /**
              * * Do do occaecat sunt in culpa:
              *   * Id id reprehenderit cillum non `adipiscing` enim enim ad occaecat
@@ -2939,7 +2993,7 @@ class KDocFormatterTest {
 
   @Test
   fun test203584301() {
-    // https://github.com/facebookincubator/ktfmt/issues/310
+    // https://github.com/facebook/ktfmt/issues/310
     val source =
         """
             /**
@@ -2955,8 +3009,7 @@ class KDocFormatterTest {
             /**
              * This is my SampleInterface interface.
              *
-             * @sample
-             *   com.example.java.sample.library.extra.long.path.MyCustomSampleInterfaceImplementationForTesting
+             * @sample com.example.java.sample.library.extra.long.path.MyCustomSampleInterfaceImplementationForTesting
              */
             """
             .trimIndent())
@@ -2966,9 +3019,9 @@ class KDocFormatterTest {
   fun test209435082() {
     // b/209435082
     val source =
-    // Nonsensical text derived from the original using the lorem() method and
-    // replacing same-length & same capitalization words from lorem ipsum
-    """
+        // Nonsensical text derived from the original using the lorem() method and
+        // replacing same-length & same capitalization words from lorem ipsum
+        """
             /**
              * eiusmod.com
              * - - -
@@ -3029,9 +3082,9 @@ class KDocFormatterTest {
   @Test
   fun test236743270() {
     val source =
-    // Nonsensical text derived from the original using the lorem() method and
-    // replacing same-length & same capitalization words from lorem ipsum
-    """
+        // Nonsensical text derived from the original using the lorem() method and
+        // replacing same-length & same capitalization words from lorem ipsum
+        """
             /**
              * @return Amet do non adipiscing sed consequat duis non Officia ID (amet sed consequat non
              * adipiscing sed eiusmod), magna consequat.
@@ -3056,9 +3109,9 @@ class KDocFormatterTest {
   @Test
   fun test238279769() {
     val source =
-    // Nonsensical text derived from the original using the lorem() method and
-    // replacing same-length & same capitalization words from lorem ipsum
-    """
+        // Nonsensical text derived from the original using the lorem() method and
+        // replacing same-length & same capitalization words from lorem ipsum
+        """
             /**
              * @property dataItemOrderRandomizer sit tempor enim pariatur non culpa id [Pariatur]z in qui anim.
              *  Anim id-lorem sit magna [Consectetur] pariatur.
@@ -4613,9 +4666,9 @@ class KDocFormatterTest {
   @Test
   fun testPropertiesWithBrackets() {
     val source =
-    // From AOSP
-    // tools/base/build-system/gradle-core/src/main/java/com/android/build/gradle/internal/cxx/prefab/PackageModel.kt
-    """
+        // From AOSP
+        // tools/base/build-system/gradle-core/src/main/java/com/android/build/gradle/internal/cxx/prefab/PackageModel.kt
+        """
             /**
              * The Android abi.json schema.
              *
