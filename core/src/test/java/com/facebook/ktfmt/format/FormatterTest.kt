@@ -16,10 +16,13 @@
 
 package com.facebook.ktfmt.format
 
+import com.facebook.ktfmt.format.Formatter.META_FORMAT
 import com.facebook.ktfmt.testutil.assertFormatted
 import com.facebook.ktfmt.testutil.assertThatFormatting
+import com.facebook.ktfmt.testutil.defaultTestFormattingOptions
 import com.google.common.truth.Truth.assertThat
 import org.junit.Assert.fail
+import org.junit.BeforeClass
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
@@ -1353,8 +1356,8 @@ class FormatterTest {
             | * Old {@link JavaDocLink} that gets removed.
             | *
             | * @param unused [Param]
-            | * @return [Unit] as [ReturnedValue]
             | * @property JavaDocLink [Param]
+            | * @return [Unit] as [ReturnedValue]
             | * @throws AnException
             | * @throws AnException
             | * @exception Sample.SampleException
@@ -1450,6 +1453,7 @@ class FormatterTest {
               |import com.example.timesAssign
               |import com.example.unaryMinus
               |import com.example.unaryPlus
+              |import org.gradle.kotlin.dsl.assign
               |"""
               .trimMargin())
 
@@ -1470,7 +1474,7 @@ class FormatterTest {
             .trimMargin()
 
     assertThatFormatting(code)
-        .withOptions(FormattingOptions(removeUnusedImports = false))
+        .withOptions(defaultTestFormattingOptions.copy(removeUnusedImports = false))
         .isEqualTo(code)
   }
 
@@ -1582,6 +1586,80 @@ class FormatterTest {
               .trimMargin())
 
   @Test
+  fun `Trailing comma forces variable value in list onto new line with manageTrailingCommas turned off`() =
+      assertFormatted(
+          """
+            val aVar =
+                setOf(
+                    Env.Dev,
+                    Env.Prod,
+                )
+            val aVar = setOf(Env.Dev, Env.Prod)
+    
+            """
+              .trimIndent(),
+          deduceMaxWidth = false,
+      )
+
+  @Test
+  fun `nested functions, maps, and statements in named parameters - default`() =
+      assertFormatted(
+          """
+            |////////////////////////////////////////////////////////////////////
+            |function(
+            |    param =
+            |        (rate downTo min step step).drop(1).map {
+            |          nestedFun(
+            |              rate =
+            |                  rate(
+            |                      value =
+            |                          firstArg<Input>().info.get(0).rate.value))
+            |        })
+            |"""
+              .trimMargin(),
+          deduceMaxWidth = true,
+      )
+
+  @Test
+  fun `nested functions, maps, and statements in named parameters kotlin lang formats differently than default`() =
+      assertFormatted(
+          """
+            |/////////////////////////////////////////////////////////////////////
+            |function(
+            |    param =
+            |        (rate downTo min step step).drop(1).map {
+            |            nestedFun(
+            |                rate =
+            |                    rate(
+            |                        value =
+            |                            firstArg<Input>().info.get(0).rate.value
+            |                    )
+            |            )
+            |        }
+            |)
+            |"""
+              .trimMargin(),
+          formattingOptions = Formatter.KOTLINLANG_FORMAT,
+          deduceMaxWidth = true,
+      )
+
+  @Test
+  fun `complex calls and calculation in named parameters without wrapping`() =
+      assertFormatted(
+          """
+            calculateMath(
+                r = apr.sc(10) / BigDecimal(100) / BigDecimal(12),
+                n = 12 * term,
+                numerator = ((BigDecimal.ONE + r).pow(n)) - BigDecimal.ONE,
+                denominator = r * (BigDecimal.ONE + r).pow(n),
+            )
+
+            """
+              .trimIndent(),
+          deduceMaxWidth = false,
+      )
+
+  @Test
   fun `Arguments are blocks`() =
       assertFormatted(
           """
@@ -1634,6 +1712,50 @@ class FormatterTest {
       |}
       |"""
               .trimMargin())
+
+  @Test
+  fun `newlines between clauses of when() are preserved`() {
+    assertThatFormatting(
+            """
+        |fun f(x: Int) {
+        |  when (x) {
+        |
+        |
+        |    1 -> print(1)
+        |    2 -> print(2)
+        |
+        |
+        |    3 ->
+        |        // Comment
+        |        print(3)
+        |
+        |    else -> {
+        |      print("else")
+        |    }
+        |
+        |  }
+        |}
+        |"""
+                .trimMargin())
+        .isEqualTo(
+            """
+        |fun f(x: Int) {
+        |  when (x) {
+        |    1 -> print(1)
+        |    2 -> print(2)
+        |
+        |    3 ->
+        |        // Comment
+        |        print(3)
+        |
+        |    else -> {
+        |      print("else")
+        |    }
+        |  }
+        |}
+        |"""
+                .trimMargin())
+  }
 
   @Test
   fun `when() with a subject expression`() =
@@ -3379,6 +3501,17 @@ class FormatterTest {
               .trimMargin())
 
   @Test
+  fun `annotations on return statements`() =
+      assertFormatted(
+          """
+      |fun foo(): Map<String, Any> {
+      |  @Suppress("AsCollectionCall")
+      |  return map.asMap()
+      |}
+      |"""
+              .trimMargin())
+
+  @Test
   fun `Unary prefix expressions`() =
       assertFormatted(
           """
@@ -4118,6 +4251,8 @@ class FormatterTest {
       |
       |  // Literally any callable expression is dangerous
       |  val x = (if (cond) x::foo else x::bar); { dead -> lambda }
+      |
+      |  funcCall(); { dead -> lambda }.withChained(call)
       |}
       |"""
             .trimMargin()
@@ -4159,6 +4294,9 @@ class FormatterTest {
       |  // Literally any callable expression is dangerous
       |  val x = (if (cond) x::foo else x::bar);
       |  { dead -> lambda }
+      |
+      |  funcCall();
+      |  { dead -> lambda }.withChained(call)
       |}
       |"""
             .trimMargin()
@@ -4237,7 +4375,9 @@ class FormatterTest {
       |}
       |"""
             .trimMargin()
-    assertThatFormatting(code).withOptions(FormattingOptions(maxWidth = 22)).isEqualTo(expected)
+    assertThatFormatting(code)
+        .withOptions(defaultTestFormattingOptions.copy(maxWidth = 22))
+        .isEqualTo(expected)
   }
 
   @Test
@@ -5322,7 +5462,9 @@ class FormatterTest {
       |class MyClass {}
       |"""
             .trimMargin()
-    assertThatFormatting(code).withOptions(FormattingOptions(maxWidth = 33)).isEqualTo(expected)
+    assertThatFormatting(code)
+        .withOptions(defaultTestFormattingOptions.copy(maxWidth = 33))
+        .isEqualTo(expected)
   }
 
   @Test
@@ -5339,7 +5481,14 @@ class FormatterTest {
         |"""
             .trimMargin()
     assertThatFormatting(code)
-        .withOptions(FormattingOptions(maxWidth = 35, blockIndent = 4, continuationIndent = 4))
+        .withOptions(
+            FormattingOptions(
+                maxWidth = 35,
+                blockIndent = 4,
+                continuationIndent = 4,
+                manageTrailingCommas = false,
+            ),
+        )
         .isEqualTo(code)
   }
 
@@ -7405,8 +7554,125 @@ class FormatterTest {
                 .trimMargin())
   }
 
+  @Test
+  fun `comment stable test`() {
+    // currently unstable
+    val first =
+        """
+        |class Foo { // This is a very long comment that is very long and needs to be line broken because it is long
+        |}
+        |"""
+            .trimMargin()
+    val second =
+        """
+        |class Foo { // This is a very long comment that is very long and needs to be line broken because it
+        |            // is long
+        |}
+        |"""
+            .trimMargin()
+    val third =
+        """
+        |class Foo { // This is a very long comment that is very long and needs to be line broken because it
+        |  // is long
+        |}
+        |"""
+            .trimMargin()
+
+    assertThatFormatting(first).isEqualTo(second)
+    assertThatFormatting(second).isEqualTo(third)
+    assertFormatted(third)
+  }
+
+  @Test
+  fun `comment stable test - no block`() {
+    val first =
+        """
+        |class Fooez // This is a very long comment that is very long and needs to be line broken because it is long
+        |"""
+            .trimMargin()
+    val second =
+        """
+        |class Fooez // This is a very long comment that is very long and needs to be line broken because it
+        |            // is long
+        |"""
+            .trimMargin()
+
+    assertThatFormatting(first).isEqualTo(second)
+    assertFormatted(second)
+  }
+
+  @Test
+  fun `comment stable test - two blocks`() {
+    // currently unstable
+    val first =
+        """
+        |class Fooez // This is a very long comment that is very long and needs to be line broken because it is long
+        |class Bar
+        |"""
+            .trimMargin()
+    val second =
+        """
+        |class Fooez // This is a very long comment that is very long and needs to be line broken because it
+        |            // is long
+        |
+        |class Bar
+        |"""
+            .trimMargin()
+    val third =
+        """
+        |class Fooez // This is a very long comment that is very long and needs to be line broken because it
+        |
+        |// is long
+        |
+        |class Bar
+        |"""
+            .trimMargin()
+
+    assertThatFormatting(first).isEqualTo(second)
+    assertThatFormatting(second).isEqualTo(third)
+    assertFormatted(third)
+  }
+
+  @Test
+  fun `comment stable test - within block`() {
+    // currently unstable
+    val first =
+        """
+        |class Foo {
+        |  class Bar // This is a very long comment that is very long and needs to be line broken because it is long
+        |}
+        |"""
+            .trimMargin()
+    val second =
+        """
+        |class Foo {
+        |  class Bar // This is a very long comment that is very long and needs to be line broken because it
+        |            // is long
+        |}
+        |"""
+            .trimMargin()
+    val third =
+        """
+        |class Foo {
+        |  class Bar // This is a very long comment that is very long and needs to be line broken because it
+        |  // is long
+        |}
+        |"""
+            .trimMargin()
+
+    assertThatFormatting(first).isEqualTo(second)
+    assertThatFormatting(second).isEqualTo(third)
+    assertFormatted(third)
+  }
+
   companion object {
     /** Triple quotes, useful to use within triple-quoted strings. */
     private const val TQ = "\"\"\""
+
+    @JvmStatic
+    @BeforeClass
+    fun setUp(): Unit {
+      defaultTestFormattingOptions = META_FORMAT.copy(manageTrailingCommas = false)
+    }
   }
 }
