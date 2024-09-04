@@ -17,8 +17,6 @@
 package com.facebook.ktfmt.format
 
 import com.facebook.ktfmt.debughelpers.printOps
-import com.facebook.ktfmt.format.FormattingOptions.Style.DROPBOX
-import com.facebook.ktfmt.format.FormattingOptions.Style.GOOGLE
 import com.facebook.ktfmt.format.RedundantElementManager.addRedundantElements
 import com.facebook.ktfmt.format.RedundantElementManager.dropRedundantElements
 import com.facebook.ktfmt.format.WhitespaceTombstones.indexOfWhitespaceTombstone
@@ -45,16 +43,27 @@ import org.jetbrains.kotlin.psi.psiUtil.startOffset
 object Formatter {
 
   @JvmField
+  val META_FORMAT =
+      FormattingOptions(
+          blockIndent = 2,
+          continuationIndent = 4,
+          manageTrailingCommas = false,
+      )
+
+  @JvmField
   val GOOGLE_FORMAT =
       FormattingOptions(
-          style = GOOGLE, blockIndent = 2, continuationIndent = 2, manageTrailingCommas = true)
+          blockIndent = 2,
+          continuationIndent = 2,
+      )
 
   /** A format that attempts to reflect https://kotlinlang.org/docs/coding-conventions.html. */
   @JvmField
-  val KOTLINLANG_FORMAT = FormattingOptions(style = GOOGLE, blockIndent = 4, continuationIndent = 4)
-
-  @JvmField
-  val DROPBOX_FORMAT = FormattingOptions(style = DROPBOX, blockIndent = 4, continuationIndent = 4)
+  val KOTLINLANG_FORMAT =
+      FormattingOptions(
+          blockIndent = 4,
+          continuationIndent = 4,
+      )
 
   private val MINIMUM_KOTLIN_VERSION = KotlinVersion(1, 4)
 
@@ -64,7 +73,7 @@ object Formatter {
    */
   @JvmStatic
   @Throws(FormatterException::class, ParseError::class)
-  fun format(code: String): String = format(FormattingOptions(), code)
+  fun format(code: String): String = format(META_FORMAT, code)
 
   /**
    * format formats the Kotlin code given in 'code' with 'removeUnusedImports' and returns it as a
@@ -73,7 +82,7 @@ object Formatter {
   @JvmStatic
   @Throws(FormatterException::class, ParseError::class)
   fun format(code: String, removeUnusedImports: Boolean): String =
-      format(FormattingOptions(removeUnusedImports = removeUnusedImports), code)
+      format(META_FORMAT.copy(removeUnusedImports = removeUnusedImports), code)
 
   /**
    * format formats the Kotlin code given in 'code' with the 'maxWidth' and returns it as a string.
