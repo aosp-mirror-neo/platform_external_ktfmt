@@ -56,14 +56,14 @@ class ParsedArgsTest {
 
     val formattingOptions = parsed.formattingOptions
 
-    val defaultFormattingOptions = FormattingOptions()
+    val defaultFormattingOptions = Formatter.META_FORMAT
     assertThat(formattingOptions).isEqualTo(defaultFormattingOptions)
   }
 
   @Test
-  fun `parseOptions recognizes --dropbox-style`() {
-    val parsed = assertSucceeds(ParsedArgs.parseOptions(arrayOf("--dropbox-style", "foo.kt")))
-    assertThat(parsed.formattingOptions).isEqualTo(Formatter.DROPBOX_FORMAT)
+  fun `parseOptions recognizes --meta-style`() {
+    val parsed = assertSucceeds(ParsedArgs.parseOptions(arrayOf("--meta-style", "foo.kt")))
+    assertThat(parsed.formattingOptions).isEqualTo(Formatter.META_FORMAT)
   }
 
   @Test
@@ -105,20 +105,51 @@ class ParsedArgsTest {
 
   @Test
   fun `parseOptions recognizes --stdin-name`() {
-    val parsed = assertSucceeds(ParsedArgs.parseOptions(arrayOf("--stdin-name=my/foo.kt")))
+    val parsed = assertSucceeds(ParsedArgs.parseOptions(arrayOf("--stdin-name=my/foo.kt", "-")))
     assertThat(parsed.stdinName).isEqualTo("my/foo.kt")
   }
 
   @Test
   fun `parseOptions accepts --stdin-name with empty value`() {
-    val parsed = assertSucceeds(ParsedArgs.parseOptions(arrayOf("--stdin-name=")))
+    val parsed = assertSucceeds(ParsedArgs.parseOptions(arrayOf("--stdin-name=", "-")))
     assertThat(parsed.stdinName).isEqualTo("")
   }
 
   @Test
-  fun `parseOptions --stdin-name without value`() {
+  fun `parseOptions rejects --stdin-name without value`() {
     val parseResult = ParsedArgs.parseOptions(arrayOf("--stdin-name"))
     assertThat(parseResult).isInstanceOf(ParseResult.Error::class.java)
+  }
+
+  @Test
+  fun `parseOptions rejects '-' and files at the same time`() {
+    val parseResult = ParsedArgs.parseOptions(arrayOf("-", "File.kt"))
+    assertThat(parseResult).isInstanceOf(ParseResult.Error::class.java)
+  }
+
+  @Test
+  fun `parseOptions rejects --stdin-name when not reading from stdin`() {
+    val parseResult = ParsedArgs.parseOptions(arrayOf("--stdin-name=foo", "file1.kt"))
+    assertThat(parseResult).isInstanceOf(ParseResult.Error::class.java)
+  }
+
+  @Test
+  fun `parseOptions recognises --help`() {
+    val parseResult = ParsedArgs.parseOptions(arrayOf("--help"))
+    assertThat(parseResult).isInstanceOf(ParseResult.ShowMessage::class.java)
+  }
+
+  @Test
+  fun `parseOptions recognises -h`() {
+    val parseResult = ParsedArgs.parseOptions(arrayOf("-h"))
+    assertThat(parseResult).isInstanceOf(ParseResult.ShowMessage::class.java)
+  }
+
+  @Test
+  fun `arg --help overrides all others`() {
+    val parseResult =
+        ParsedArgs.parseOptions(arrayOf("--style=google", "@unknown", "--help", "file.kt"))
+    assertThat(parseResult).isInstanceOf(ParseResult.ShowMessage::class.java)
   }
 
   @Test
@@ -165,19 +196,18 @@ class ParsedArgsTest {
   @Test
   fun `last style in args wins`() {
     val testResult =
-        ParsedArgs.parseOptions(arrayOf<String>("--google-style", "--dropbox-style", "File.kt"))
+        ParsedArgs.parseOptions(arrayOf("--google-style", "--kotlinlang-style", "File.kt"))
     assertThat(testResult)
         .isEqualTo(
             parseResultOk(
                 fileNames = listOf("File.kt"),
-                formattingOptions = Formatter.DROPBOX_FORMAT,
+                formattingOptions = Formatter.KOTLINLANG_FORMAT,
             ))
   }
 
   @Test
   fun `error when parsing multiple args and one is unknown`() {
-    val testResult =
-        ParsedArgs.parseOptions(arrayOf<String>("@unknown", "--google-style", "File.kt"))
+    val testResult = ParsedArgs.parseOptions(arrayOf("@unknown", "--google-style", "File.kt"))
     assertThat(testResult).isEqualTo(ParseResult.Error("Unexpected option: @unknown"))
   }
 
@@ -188,7 +218,7 @@ class ParsedArgsTest {
 
   private fun parseResultOk(
       fileNames: List<String> = emptyList(),
-      formattingOptions: FormattingOptions = FormattingOptions(),
+      formattingOptions: FormattingOptions = Formatter.META_FORMAT,
       dryRun: Boolean = false,
       setExitIfChanged: Boolean = false,
       removedUnusedImports: Boolean = true,
