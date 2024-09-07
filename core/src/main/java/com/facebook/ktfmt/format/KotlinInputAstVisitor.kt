@@ -135,8 +135,6 @@ class KotlinInputAstVisitor(
     private val builder: OpsBuilder
 ) : KtTreeVisitorVoid() {
 
-  private val isGoogleStyle = options.style == FormattingOptions.Style.GOOGLE
-
   /** Standard indentation for a block */
   private val blockIndent: Indent.Const = Indent.Const.make(options.blockIndent, 1)
 
@@ -257,7 +255,7 @@ class KotlinInputAstVisitor(
     visitEachCommaSeparated(
         typeArgumentList.arguments,
         typeArgumentList.trailingComma != null,
-        wrapInBlock = !isGoogleStyle,
+        wrapInBlock = !options.manageTrailingCommas,
         prefix = "<",
         postfix = ">",
     )
@@ -817,8 +815,8 @@ class KotlinInputAstVisitor(
       leadingBreak = !hasEmptyParens && hasTrailingComma
       breakAfterPrefix = false
     } else {
-      wrapInBlock = !isGoogleStyle
-      breakBeforePostfix = isGoogleStyle && !hasEmptyParens
+      wrapInBlock = !options.manageTrailingCommas
+      breakBeforePostfix = options.manageTrailingCommas && !hasEmptyParens
       leadingBreak = !hasEmptyParens
       breakAfterPrefix = !hasEmptyParens
     }
@@ -1053,7 +1051,7 @@ class KotlinInputAstVisitor(
       prefix: String? = null,
       postfix: String? = null,
       breakAfterPrefix: Boolean = true,
-      breakBeforePostfix: Boolean = isGoogleStyle,
+      breakBeforePostfix: Boolean = options.manageTrailingCommas,
   ): BreakTag? {
     val breakAfterLastElement = hasTrailingComma || (postfix != null && breakBeforePostfix)
     val nameTag = if (breakAfterLastElement) null else genSym()
@@ -1767,6 +1765,7 @@ class KotlinInputAstVisitor(
         (baseExpression is KtBinaryExpression || baseExpression is KtBinaryExpressionWithTypeRHS) &&
             expression.parent is KtBlockExpression -> builder.forcedBreak()
         baseExpression is KtLambdaExpression -> builder.space()
+        baseExpression is KtReturnExpression -> builder.forcedBreak()
         else -> builder.breakOp(Doc.FillMode.UNIFIED, " ", ZERO)
       }
 
@@ -1882,8 +1881,12 @@ class KotlinInputAstVisitor(
       builder.space()
       builder.token("{", Doc.Token.RealOrImaginary.REAL, blockIndent, Optional.of(blockIndent))
 
-      expression.entries.forEach { whenEntry ->
+      expression.entries.forEachIndexed { index, whenEntry ->
         builder.block(blockIndent) {
+          if (index != 0) {
+            // preserve new line if there's one
+            builder.blankLineWanted(OpsBuilder.BlankLineWanted.PRESERVE)
+          }
           builder.forcedBreak()
           if (whenEntry.isElse) {
             builder.token("else")
@@ -2134,7 +2137,7 @@ class KotlinInputAstVisitor(
           hasTrailingComma = list.trailingComma != null,
           prefix = "<",
           postfix = ">",
-          wrapInBlock = !isGoogleStyle,
+          wrapInBlock = !options.manageTrailingCommas,
       )
     }
   }
@@ -2366,7 +2369,7 @@ class KotlinInputAstVisitor(
           expression.trailingComma != null,
           prefix = "[",
           postfix = "]",
-          wrapInBlock = !isGoogleStyle)
+          wrapInBlock = !options.manageTrailingCommas)
     }
   }
 
@@ -2607,7 +2610,7 @@ class KotlinInputAstVisitor(
       builder.token(keyword)
       builder.space()
       builder.token("(")
-      if (isGoogleStyle) {
+      if (options.manageTrailingCommas) {
         builder.block(expressionBreakIndent) {
           builder.breakOp(Doc.FillMode.UNIFIED, "", ZERO)
           visit(condition)
