@@ -26,8 +26,6 @@ import com.google.common.truth.Truth
 import org.intellij.lang.annotations.Language
 import org.junit.Assert
 
-var defaultTestFormattingOptions: FormattingOptions = Formatter.META_FORMAT
-
 /**
  * Verifies the given code passes through formatting, and stays the same at the end
  *
@@ -46,7 +44,7 @@ var defaultTestFormattingOptions: FormattingOptions = Formatter.META_FORMAT
  */
 fun assertFormatted(
     @Language("kts") code: String,
-    formattingOptions: FormattingOptions = defaultTestFormattingOptions,
+    formattingOptions: FormattingOptions = FormattingOptions(),
     deduceMaxWidth: Boolean = false,
 ) {
   val first = code.lines().first()
@@ -83,7 +81,7 @@ fun assertThatFormatting(@Language("kts") code: String): FormattedCodeSubject {
 
 class FormattedCodeSubject(metadata: FailureMetadata, private val code: String) :
     Subject(metadata, code) {
-  private var options: FormattingOptions = defaultTestFormattingOptions
+  private var options: FormattingOptions = FormattingOptions()
   private var allowTrailingWhitespace = false
 
   fun withOptions(options: FormattingOptions): FormattedCodeSubject {

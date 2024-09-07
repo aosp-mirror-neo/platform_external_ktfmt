@@ -14,80 +14,50 @@
  * limitations under the License.
  */
 
-import com.ncorti.ktfmt.gradle.tasks.KtfmtCheckTask
-import com.ncorti.ktfmt.gradle.tasks.KtfmtFormatTask
-import org.jetbrains.intellij.platform.gradle.IntelliJPlatformType.IntellijIdeaCommunity
-
 plugins {
+  id("org.jetbrains.intellij") version "1.17.3"
   java
-  alias(libs.plugins.kotlin)
-  alias(libs.plugins.intelliJPlatform)
-  alias(libs.plugins.ktfmt)
+  id("com.diffplug.spotless") version "5.10.2"
 }
 
-val ktfmtVersion = rootProject.file("../version.txt").readText().trim()
-val pluginVersion = "1.2"
+val currentKtfmtVersion = rootProject.file("../version.txt").readText().trim()
+val stableKtfmtVersion = rootProject.file("../stable_version.txt").readText().trim()
+val pluginVersion = "1.1"
 
 group = "com.facebook"
 
-version = "$pluginVersion.$ktfmtVersion"
-
-kotlin { jvmToolchain(17) }
+version = "$pluginVersion.$currentKtfmtVersion"
 
 repositories {
   mavenCentral()
-  intellijPlatform { defaultRepositories() }
   mavenLocal()
 }
 
+java {
+  sourceCompatibility = JavaVersion.VERSION_11
+  targetCompatibility = JavaVersion.VERSION_11
+}
+
 dependencies {
-  intellijPlatform {
-    create(IntellijIdeaCommunity, "2022.3")
-    instrumentationTools()
-    pluginVerifier()
-    zipSigner()
-  }
-
-  implementation("com.facebook:ktfmt:$ktfmtVersion")
+  implementation("com.facebook", "ktfmt", stableKtfmtVersion)
+  implementation("com.google.googlejavaformat", "google-java-format", "1.22.0")
 }
 
-intellijPlatform {
-  pluginConfiguration.ideaVersion {
-    sinceBuild = "223.7571.182" // 2022.3
-    untilBuild = provider { null }
-  }
-
-  publishing { token = System.getenv("JETBRAINS_MARKETPLACE_TOKEN") }
-
-  pluginVerification { ides { recommended() } }
+// See https://github.com/JetBrains/gradle-intellij-plugin/
+intellij {
+  // Version with which to build (and run; unless alternativeIdePath is specified)
+  version.set("2022.1")
+  // To run on a different IDE, uncomment and specify a path.
+  // localPath = "/Applications/Android Studio.app"
 }
-
-val runIntellij242 by
-    intellijPlatformTesting.runIde.registering {
-      type = IntellijIdeaCommunity
-      version = "2024.2"
-    }
 
 tasks {
-  // Set up ktfmt formatting tasks
-  val ktfmtFormatKts by
-      creating(KtfmtFormatTask::class) {
-        source = fileTree(rootDir)
-        include("**/*.kts")
-      }
-  val ktfmtCheckKts by
-      creating(KtfmtCheckTask::class) {
-        source = fileTree(rootDir)
-        include("**/*.kts")
-        mustRunAfter("compileKotlin")
-        mustRunAfter("prepareSandbox")
-        mustRunAfter("prepareTestSandbox")
-        mustRunAfter("instrumentCode")
-        mustRunAfter("instrumentTestCode")
-        mustRunAfter("buildSearchableOptions")
-        mustRunAfter("prepareJarSearchableOptions")
-      }
-  val ktfmtFormat by getting { dependsOn(ktfmtFormatKts) }
-  val ktfmtCheck by getting { dependsOn(ktfmtCheckKts) }
-  val check by getting { dependsOn(ktfmtCheck) }
+  patchPluginXml {
+    sinceBuild.set("221")
+    untilBuild.set("")
+  }
+  publishPlugin { token.set(System.getenv("JETBRAINS_MARKETPLACE_TOKEN")) }
+  runPluginVerifier { ideVersions.set(listOf("221")) }
 }
+
+spotless { java { googleJavaFormat("1.22.0") } }

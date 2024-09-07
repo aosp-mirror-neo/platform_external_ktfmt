@@ -14,20 +14,14 @@
  * limitations under the License.
  */
 
-import com.ncorti.ktfmt.gradle.tasks.KtfmtCheckTask
-import com.ncorti.ktfmt.gradle.tasks.KtfmtFormatTask
-
-plugins {
-  kotlin("jvm") version "1.8.22"
-  id("com.ncorti.ktfmt.gradle") version "0.19.0"
-}
+plugins { kotlin("jvm") version "1.8.22" }
 
 repositories {
   mavenLocal()
   mavenCentral()
 }
 
-val ktfmtVersion = rootProject.file("../version.txt").readText().trim()
+val ktfmtVersion = rootProject.file("../stable_version.txt").readText().trim()
 
 dependencies {
   implementation("com.facebook:ktfmt:$ktfmtVersion")
@@ -39,7 +33,7 @@ dependencies {
   testImplementation(kotlin("test-junit"))
 }
 
-kotlin { jvmToolchain(17) }
+kotlin { jvmToolchain(11) }
 
 tasks {
   test { useJUnit() }
@@ -67,22 +61,4 @@ tasks {
       }
 
   build { dependsOn(packageSkinny) }
-
-  // Set up ktfmt formatting tasks
-  val ktfmtFormatKts by
-      creating(KtfmtFormatTask::class) {
-        source = fileTree(rootDir)
-        include("**/*.kts")
-      }
-  val ktfmtCheckKts by
-      creating(KtfmtCheckTask::class) {
-        source = fileTree(rootDir)
-        include("**/*.kts")
-        mustRunAfter("compileKotlin")
-        mustRunAfter("compileTestKotlin")
-        mustRunAfter("test")
-      }
-  val ktfmtFormat by getting { dependsOn(ktfmtFormatKts) }
-  val ktfmtCheck by getting { dependsOn(ktfmtCheckKts) }
-  val check by getting { dependsOn(ktfmtCheck) }
 }

@@ -76,11 +76,7 @@ internal class RedundantImportDetector(val enabled: Boolean) {
             // Property delegation operators
             "getValue",
             "setValue",
-            "provideDelegate",
-            // assign operator - Gradle compiler plugin
-            // https://blog.gradle.org/simpler-kotlin-dsl-property-assignment
-            "assign",
-        )
+            "provideDelegate")
 
     private val COMPONENT_OPERATOR_REGEX = Regex("component\\d+")
 
