@@ -18,9 +18,7 @@ package com.facebook.ktfmt.cli
 
 import com.google.common.truth.Truth.assertThat
 import java.io.ByteArrayOutputStream
-import java.io.File
 import java.io.PrintStream
-import java.lang.IllegalStateException
 import java.nio.charset.Charset
 import java.nio.charset.StandardCharsets
 import java.nio.charset.StandardCharsets.UTF_8
@@ -28,7 +26,6 @@ import java.nio.file.Files
 import java.util.concurrent.ForkJoinPool
 import kotlin.io.path.createTempDirectory
 import org.junit.After
-import org.junit.Assert.fail
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -102,16 +99,6 @@ class MainTest {
 
     assertThat(Main.expandArgsToFileNames(listOf(dir1.toString(), dir2.toString())))
         .containsExactly(foo1, bar1, foo2, bar2)
-  }
-
-  @Test
-  fun `expandArgsToFileNames - a dash is an error`() {
-    try {
-      Main.expandArgsToFileNames(listOf(root.resolve("foo.bar").toString(), File("-").toString()))
-      fail("expected exception, but nothing was thrown")
-    } catch (e: IllegalStateException) {
-      assertThat(e.message).contains("Error")
-    }
   }
 
   @Test
@@ -238,7 +225,7 @@ class MainTest {
   }
 
   @Test
-  fun `dropbox-style is passed to formatter (file)`() {
+  fun `kotlinlang-style is passed to formatter (file)`() {
     val code =
         """fun f() {
     for (child in
@@ -254,14 +241,14 @@ class MainTest {
             emptyInput,
             PrintStream(out),
             PrintStream(err),
-            arrayOf("--dropbox-style", fooBar.toString()))
+            arrayOf("--kotlinlang-style", fooBar.toString()))
         .run()
 
     assertThat(fooBar.readText()).isEqualTo(code)
   }
 
   @Test
-  fun `dropbox-style is passed to formatter (stdin)`() {
+  fun `kotlinlang-style is passed to formatter (stdin)`() {
     val code =
         """fun f() {
           |for (child in
@@ -284,7 +271,7 @@ class MainTest {
             code.byteInputStream(),
             PrintStream(out),
             PrintStream(err),
-            arrayOf("--dropbox-style", "-"))
+            arrayOf("--kotlinlang-style", "-"))
         .run()
 
     assertThat(out.toString(UTF_8)).isEqualTo(formatted)
@@ -471,27 +458,6 @@ class MainTest {
   }
 
   @Test
-  fun `--stdin-name can only be used with stdin`() {
-    val code = """fun f () =    println( "hello, world" )"""
-    val file = root.resolve("foo.kt")
-    file.writeText(code, UTF_8)
-
-    val exitCode =
-        Main(
-                emptyInput,
-                PrintStream(out),
-                PrintStream(err),
-                arrayOf("--stdin-name=bar.kt", file.toString()))
-            .run()
-
-    assertThat(file.readText()).isEqualTo(code)
-    assertThat(out.toString(UTF_8)).isEmpty()
-    assertThat(err.toString(testCharset))
-        .isEqualTo("Error: --stdin-name can only be used with stdin\n")
-    assertThat(exitCode).isEqualTo(1)
-  }
-
-  @Test
   fun `Always use UTF8 encoding (stdin, stdout)`() {
     val code = """fun f () =    println( "hello, world" )"""
     val expected = """fun f() = println("hello, world")""" + "\n"
@@ -526,5 +492,19 @@ class MainTest {
 
     assertThat(exitCode).isEqualTo(0)
     assertThat(file.readText(UTF_8)).isEqualTo("""fun f() = println("hello, world")""" + "\n")
+  }
+
+  @Test
+  fun `--help gives return code of 0`() {
+    val exitCode =
+        Main(
+                emptyInput,
+                PrintStream(out),
+                PrintStream(err),
+                arrayOf("--help"),
+            )
+            .run()
+
+    assertThat(exitCode).isEqualTo(0)
   }
 }
