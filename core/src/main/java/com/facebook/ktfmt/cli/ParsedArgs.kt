@@ -39,25 +39,77 @@ data class ParsedArgs(
   companion object {
 
     fun processArgs(args: Array<String>): ParseResult {
-      if (args.size == 1 && args[0].startsWith("@")) {
-        return parseOptions(File(args[0].substring(1)).readLines(UTF_8).toTypedArray())
-      } else {
-        return parseOptions(args)
-      }
+      val arguments =
+          if (args.size == 1 && args[0].startsWith("@")) {
+            File(args[0].substring(1)).readLines(UTF_8).toTypedArray()
+          } else {
+            args
+          }
+      return parseOptions(arguments)
     }
+
+    val HELP_TEXT =
+        """
+        |ktfmt - command line Kotlin source code pretty-printer
+        |
+        |Usage:
+        |  ktfmt [OPTIONS] <File1.kt> <File2.kt> ...
+        |  ktfmt @ARGFILE
+        |
+        |ktfmt formats Kotlin source code files in-place, reporting for each file whether the
+        |formatting succeeded or failed on standard error. If none of the style options are
+        |passed, Meta's style is used.
+        |
+        |Alternatively, ktfmt can read Kotlin source code from standard input and write the 
+        |formatted result on standard output.
+        |
+        |Example:
+        |     $ ktfmt --kotlinlang-style Main.kt src/Parser.kt
+        |     Done formatting Main.kt
+        |     Error formatting src/Parser.kt: @@@ERROR@@@; skipping.
+        |    
+        |Commands options:
+        |  -h, --help                        Show this help message
+        |  -n, --dry-run                     Don't write to files, only report files which 
+        |                                        would have changed
+        |  --meta-style                      Use 2-space block indenting (default)
+        |  --google-style                    Google internal style (2 spaces)
+        |  --kotlinlang-style                Kotlin language guidelines style (4 spaces)
+        |  --stdin-name=<name>               Name to report when formatting code from stdin
+        |  --set-exit-if-changed             Sets exit code to 1 if any input file was not 
+        |                                        formatted/touched
+        |  --do-not-remove-unused-imports    Leaves all imports in place, even if not used
+        |  
+        |ARGFILE:
+        |  If the only argument begins with '@', the remainder of the argument is treated
+        |  as the name of a file to read options and arguments from, one per line.
+        |  
+        |  e.g.
+        |      $ cat arg-file.txt
+        |      --google-style
+        |      -n
+        |      File1.kt
+        |      File2.kt
+        |      $ ktfmt @arg-file1.txt
+        |      Done formatting File1.kt
+        |      Done formatting File2.kt
+        |"""
+            .trimMargin()
 
     /** parseOptions parses command-line arguments passed to ktfmt. */
     fun parseOptions(args: Array<out String>): ParseResult {
       val fileNames = mutableListOf<String>()
-      var formattingOptions = FormattingOptions()
+      var formattingOptions = Formatter.META_FORMAT
       var dryRun = false
       var setExitIfChanged = false
       var removeUnusedImports = true
       var stdinName: String? = null
 
+      if ("--help" in args || "-h" in args) return ParseResult.ShowMessage(HELP_TEXT)
+
       for (arg in args) {
         when {
-          arg == "--dropbox-style" -> formattingOptions = Formatter.DROPBOX_FORMAT
+          arg == "--meta-style" -> formattingOptions = Formatter.META_FORMAT
           arg == "--google-style" -> formattingOptions = Formatter.GOOGLE_FORMAT
           arg == "--kotlinlang-style" -> formattingOptions = Formatter.KOTLINLANG_FORMAT
           arg == "--dry-run" || arg == "-n" -> dryRun = true
@@ -72,6 +124,18 @@ data class ParsedArgs(
           arg.startsWith("@") -> return ParseResult.Error("Unexpected option: $arg")
           else -> fileNames.add(arg)
         }
+      }
+
+      if (fileNames.contains("-")) {
+        // We're reading from stdin
+        if (fileNames.size > 1) {
+          val filesExceptStdin = fileNames - "-"
+          return ParseResult.Error(
+              "Cannot read from stdin and files in same run. Found stdin specifier '-'" +
+                  " and files ${filesExceptStdin.joinToString(", ")} ")
+        }
+      } else if (stdinName != null) {
+        return ParseResult.Error("--stdin-name can only be specified when reading from stdin")
       }
 
       return ParseResult.Ok(
@@ -93,6 +157,8 @@ data class ParsedArgs(
 
 sealed interface ParseResult {
   data class Ok(val parsedValue: ParsedArgs) : ParseResult
+
+  data class ShowMessage(val message: String) : ParseResult
 
   data class Error(val errorMessage: String) : ParseResult
 }
