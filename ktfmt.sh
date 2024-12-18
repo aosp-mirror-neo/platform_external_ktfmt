@@ -1,2 +1,2 @@
 #!/bin/bash
-java -jar ../../prebuilts/build-tools/common/framework/ktfmt.jar $@
+java -jar `dirname $0`/../../prebuilts/build-tools/common/framework/ktfmt.jar $@
