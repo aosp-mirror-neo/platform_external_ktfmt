@@ -47,6 +47,7 @@ java_binary_host {
     static_libs: [
         "kotlin-stdlib-jdk7",
         "kotlin-compiler-embeddable",
+        "kotlinx_coroutines",
         "google_java_format",
         "guava",
         "trove-prebuilt",
