@@ -28,7 +28,6 @@ package {
     default_applicable_licenses: ["external_ktfmt_license"],
 }
 
-
 license {
     name: "external_ktfmt_license",
     visibility: [":__subpackages__"],
@@ -45,12 +44,12 @@ java_binary_host {
     manifest: "MANIFEST.mf",
     srcs: ["core/src/main/**/*.kt"],
     static_libs: [
-        "kotlin-stdlib-jdk7",
-        "kotlin-compiler-embeddable",
-        "kotlinx_coroutines",
         "google_java_format",
         "guava",
-        "trove-prebuilt",
         "jna-prebuilt",
+        "kotlin-compiler-embeddable",
+        "kotlin-stdlib-jdk7",
+        "kotlinx_coroutines",
+        "trove-prebuilt",
     ],
 }
