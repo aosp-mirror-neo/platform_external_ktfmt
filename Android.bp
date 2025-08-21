@@ -42,7 +42,11 @@ license {
 java_binary_host {
     name: "ktfmt",
     manifest: "MANIFEST.mf",
-    srcs: ["core/src/main/**/*.kt"],
+    srcs: [
+        "core/src/main/java/**/*.kt",
+        "generated/main/java/**/*.kt",
+    ],
+    exclude_srcs: ["core/src/main/java/com/facebook/ktfmt/util/kotlin-2.1/**/*.kt"],
     static_libs: [
         "google_java_format",
         "guava",
