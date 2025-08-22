@@ -14,25 +14,26 @@
  * limitations under the License.
  */
 
-import com.ncorti.ktfmt.gradle.tasks.KtfmtCheckTask
-import com.ncorti.ktfmt.gradle.tasks.KtfmtFormatTask
 import org.jetbrains.intellij.platform.gradle.IntelliJPlatformType.IntellijIdeaCommunity
 
 plugins {
   java
-  alias(libs.plugins.kotlin)
-  alias(libs.plugins.intelliJPlatform)
-  alias(libs.plugins.ktfmt)
+  kotlin("jvm")
+  id("com.ncorti.ktfmt.gradle")
+  id("org.jetbrains.intellij.platform")
 }
 
-val ktfmtVersion = rootProject.file("../version.txt").readText().trim()
-val pluginVersion = "1.2"
+val ktfmtVersion = rootProject.version
+val pluginVersion = "1.3"
 
 group = "com.facebook"
 
 version = "$pluginVersion.$ktfmtVersion"
 
-kotlin { jvmToolchain(17) }
+kotlin {
+  val javaVersion: String = rootProject.libs.versions.java.get()
+  jvmToolchain(javaVersion.toInt())
+}
 
 repositories {
   mavenCentral()
@@ -43,15 +44,16 @@ repositories {
 dependencies {
   intellijPlatform {
     create(IntellijIdeaCommunity, "2022.3")
-    instrumentationTools()
     pluginVerifier()
     zipSigner()
   }
 
-  implementation("com.facebook:ktfmt:$ktfmtVersion")
+  implementation(project(":ktfmt"))
 }
 
 intellijPlatform {
+  projectName.set("ktfmt_idea_plugin")
+
   pluginConfiguration.ideaVersion {
     sinceBuild = "223.7571.182" // 2022.3
     untilBuild = provider { null }
@@ -62,32 +64,7 @@ intellijPlatform {
   pluginVerification { ides { recommended() } }
 }
 
-val runIntellij242 by
-    intellijPlatformTesting.runIde.registering {
-      type = IntellijIdeaCommunity
-      version = "2024.2"
-    }
-
-tasks {
-  // Set up ktfmt formatting tasks
-  val ktfmtFormatKts by
-      creating(KtfmtFormatTask::class) {
-        source = fileTree(rootDir)
-        include("**/*.kts")
-      }
-  val ktfmtCheckKts by
-      creating(KtfmtCheckTask::class) {
-        source = fileTree(rootDir)
-        include("**/*.kts")
-        mustRunAfter("compileKotlin")
-        mustRunAfter("prepareSandbox")
-        mustRunAfter("prepareTestSandbox")
-        mustRunAfter("instrumentCode")
-        mustRunAfter("instrumentTestCode")
-        mustRunAfter("buildSearchableOptions")
-        mustRunAfter("prepareJarSearchableOptions")
-      }
-  val ktfmtFormat by getting { dependsOn(ktfmtFormatKts) }
-  val ktfmtCheck by getting { dependsOn(ktfmtCheckKts) }
-  val check by getting { dependsOn(ktfmtCheck) }
+intellijPlatformTesting.runIde.register("runIntellij242") {
+  type = IntellijIdeaCommunity
+  version = "2024.2"
 }

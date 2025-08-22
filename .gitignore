@@ -1,17 +1,10 @@
-.gradle/
-ktfmt_idea_plugin/build/
-ktfmt_idea_plugin/.intellijPlatform/
 .idea/
 *.ims
 *.iml
 
-.classpath
-.project
 .factorypath
 .settings/
 .apt_generated/
-
-target/
 
 bin/
 out/
@@ -19,8 +12,14 @@ out/
 .DS_Store
 classes/
 
-online_formatter/build/
 online_formatter/out.yml
+
+.intellijPlatform/
 
 website/node_modules
 release-ktfmt-website/
+
+### Gradle ###
+.gradle
+**/build/
+!src/**/build/

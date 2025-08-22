@@ -31,7 +31,8 @@ class TokenizerTest {
                 "val  a = ", //
                 "", //
                 "     ", //
-                "     15")
+                "     15",
+            )
             .joinToString("\n")
 
     val file = Parser.parse(code)
@@ -57,7 +58,8 @@ class TokenizerTest {
                 "      \"\"\"",
                 "val b=\"lorem ipsum\"",
                 "      ",
-                "    ")
+                "    ",
+            )
             .joinToString("\n")
 
     val file = Parser.parse(code)
@@ -78,7 +80,8 @@ class TokenizerTest {
                     "    Lorem",
                     "   ${WhitespaceTombstones.SPACE_TOMBSTONE}",
                     "    ${WhitespaceTombstones.SPACE_TOMBSTONE}",
-                    "      \"\"\"")
+                    "      \"\"\"",
+                )
                 .joinToString("\n"),
             "\n",
             "val",
@@ -89,7 +92,8 @@ class TokenizerTest {
             "\n",
             "      ",
             "\n",
-            "    ")
+            "    ",
+        )
         .inOrder()
   }
 
@@ -97,10 +101,9 @@ class TokenizerTest {
   fun `Token index is advanced after a string token`() {
     val code =
         """
-      |val b="a"
-      |val a=5
-      |"""
-            .trimMargin()
+        |val b="a"
+        |val a=5
+        |"""
             .trimMargin()
 
     val file = Parser.parse(code)
@@ -108,10 +111,10 @@ class TokenizerTest {
     file.accept(tokenizer)
 
     assertThat(tokenizer.toks.map { it.originalText })
-        .containsExactly("val", " ", "b", "=", "\"a\"", "\n", "val", " ", "a", "=", "5")
+        .containsExactly("val", " ", "b", "=", "\"a\"", "\n", "val", " ", "a", "=", "5", "\n")
         .inOrder()
     assertThat(tokenizer.toks.map { it.index })
-        .containsExactly(0, -1, 1, 2, 3, -1, 4, -1, 5, 6, 7)
+        .containsExactly(0, -1, 1, 2, 3, -1, 4, -1, 5, 6, 7, -1)
         .inOrder()
   }
 
@@ -119,15 +122,14 @@ class TokenizerTest {
   fun `Context receivers are parsed correctly`() {
     val code =
         """
-      |context(Something)
-      |class A {
-      |  context(
-      |  // Test comment.
-      |  Logger, Raise<Error>)
-      |  fun test() {}
-      |}
-      |"""
-            .trimMargin()
+        |context(Something)
+        |class A {
+        |  context(
+        |  // Test comment.
+        |  Logger, Raise<Error>)
+        |  fun test() {}
+        |}
+        |"""
             .trimMargin()
 
     val file = Parser.parse(code)
@@ -174,7 +176,9 @@ class TokenizerTest {
             "{",
             "}",
             "\n",
-            "}")
+            "}",
+            "\n",
+        )
         .inOrder()
     assertThat(tokenizer.toks.map { it.index })
         .containsExactly(
@@ -216,7 +220,432 @@ class TokenizerTest {
             21,
             22,
             -1,
-            23)
+            23,
+            -1,
+        )
+        .inOrder()
+  }
+
+  @Test
+  fun `Guard conditions with subject are parsed correctly`() {
+    // language=kotlin
+    val code =
+        """
+        |fun feedAnimal(animal: Animal) {
+        |    when (animal) {
+        |        is Animal.Cat if !animal.mouseHunter -> animal.feedCat()
+        |    }
+        |}
+        |"""
+            .trimMargin()
+
+    val file = Parser.parse(code)
+    val tokenizer = Tokenizer(code, file)
+    file.accept(tokenizer)
+
+    assertThat(tokenizer.toks.map { it.originalText })
+        .containsExactly(
+            "fun",
+            " ",
+            "feedAnimal",
+            "(",
+            "animal",
+            ":",
+            " ",
+            "Animal",
+            ")",
+            " ",
+            "{",
+            "\n",
+            "    ",
+            "when",
+            " ",
+            "(",
+            "animal",
+            ")",
+            " ",
+            "{",
+            "\n",
+            "        ",
+            "is",
+            " ",
+            "Animal",
+            ".",
+            "Cat",
+            " ",
+            "if",
+            " ",
+            "!",
+            "animal",
+            ".",
+            "mouseHunter",
+            " ",
+            "->",
+            " ",
+            "animal",
+            ".",
+            "feedCat",
+            "(",
+            ")",
+            "\n",
+            "    ",
+            "}",
+            "\n",
+            "}",
+            "\n",
+        )
+        .inOrder()
+    assertThat(tokenizer.toks.map { it.index })
+        .containsExactly(
+            0,
+            -1,
+            1,
+            2,
+            3,
+            4,
+            -1,
+            5,
+            6,
+            -1,
+            7,
+            -1,
+            -1,
+            8,
+            -1,
+            9,
+            10,
+            11,
+            -1,
+            12,
+            -1,
+            -1,
+            13,
+            -1,
+            14,
+            15,
+            16,
+            -1,
+            17,
+            -1,
+            18,
+            19,
+            20,
+            21,
+            -1,
+            22,
+            -1,
+            23,
+            24,
+            25,
+            26,
+            27,
+            -1,
+            -1,
+            28,
+            -1,
+            29,
+            -1,
+        )
+        .inOrder()
+  }
+
+  @Test
+  fun `Long binary expressions are parsed correctly`() {
+    // language=kotlin
+    val code =
+        """
+        |//////////////////////////////////////
+        |fun foo() {
+        |  val sentence =
+        |      "The" +
+        |          "quick" +
+        |          ("brown" + "fox") +
+        |          "jumps" +
+        |          "over" +
+        |          "the" +
+        |          "lazy" +
+        |          "dog"
+        |}
+        |"""
+            .trimMargin()
+
+    val file = Parser.parse(code)
+    val tokenizer = Tokenizer(code, file)
+    file.accept(tokenizer)
+
+    assertThat(tokenizer.toks.map { it.originalText })
+        .containsExactly(
+            "//////////////////////////////////////",
+            "\n",
+            "fun",
+            " ",
+            "foo",
+            "(",
+            ")",
+            " ",
+            "{",
+            "\n",
+            "  ",
+            "val",
+            " ",
+            "sentence",
+            " ",
+            "=",
+            "\n",
+            "      ",
+            "\"The\"",
+            " ",
+            "+",
+            "\n",
+            "          ",
+            "\"quick\"",
+            " ",
+            "+",
+            "\n",
+            "          ",
+            "(",
+            "\"brown\"",
+            " ",
+            "+",
+            " ",
+            "\"fox\"",
+            ")",
+            " ",
+            "+",
+            "\n",
+            "          ",
+            "\"jumps\"",
+            " ",
+            "+",
+            "\n",
+            "          ",
+            "\"over\"",
+            " ",
+            "+",
+            "\n",
+            "          ",
+            "\"the\"",
+            " ",
+            "+",
+            "\n",
+            "          ",
+            "\"lazy\"",
+            " ",
+            "+",
+            "\n",
+            "          ",
+            "\"dog\"",
+            "\n",
+            "}",
+            "\n",
+        )
+        .inOrder()
+    assertThat(tokenizer.toks.map { it.index })
+        .containsExactly(
+            0,
+            -1,
+            1,
+            -1,
+            2,
+            3,
+            4,
+            -1,
+            5,
+            -1,
+            -1,
+            6,
+            -1,
+            7,
+            -1,
+            8,
+            -1,
+            -1,
+            9,
+            -1,
+            10,
+            -1,
+            -1,
+            11,
+            -1,
+            12,
+            -1,
+            -1,
+            13,
+            14,
+            -1,
+            15,
+            -1,
+            16,
+            17,
+            -1,
+            18,
+            -1,
+            -1,
+            19,
+            -1,
+            20,
+            -1,
+            -1,
+            21,
+            -1,
+            22,
+            -1,
+            -1,
+            23,
+            -1,
+            24,
+            -1,
+            -1,
+            25,
+            -1,
+            26,
+            -1,
+            -1,
+            27,
+            -1,
+            28,
+            -1,
+        )
+        .inOrder()
+  }
+
+  @Test
+  fun `Context parameters are parsed correctly`() {
+    if (KotlinVersion.CURRENT < KotlinVersion(2, 2)) return
+    // language=kotlin
+    val code =
+        """
+        |context(something: Something)
+        |class A {
+        |  context(
+        |  // Test comment.
+        |  logger: Logger, raise: Raise<Error>, _: Ignored)
+        |  fun test() {}
+        |}
+        |"""
+            .trimMargin()
+
+    val file = Parser.parse(code)
+    val tokenizer = Tokenizer(code, file)
+    file.accept(tokenizer)
+
+    assertThat(tokenizer.toks.map { it.originalText })
+        .containsExactly(
+            "context",
+            "(",
+            "something",
+            ":",
+            " ",
+            "Something",
+            ")",
+            "\n",
+            "class",
+            " ",
+            "A",
+            " ",
+            "{",
+            "\n",
+            "  ",
+            "context",
+            "(",
+            "\n",
+            "  ",
+            "// Test comment.",
+            "\n",
+            "  ",
+            "logger",
+            ":",
+            " ",
+            "Logger",
+            ",",
+            " ",
+            "raise",
+            ":",
+            " ",
+            "Raise",
+            "<",
+            "Error",
+            ">",
+            ",",
+            " ",
+            "_",
+            ":",
+            " ",
+            "Ignored",
+            ")",
+            "\n",
+            "  ",
+            "fun",
+            " ",
+            "test",
+            "(",
+            ")",
+            " ",
+            "{",
+            "}",
+            "\n",
+            "}",
+            "\n",
+        )
+        .inOrder()
+    assertThat(tokenizer.toks.map { it.index })
+        .containsExactly(
+            0,
+            1,
+            2,
+            3,
+            -1,
+            4,
+            5,
+            -1,
+            6,
+            -1,
+            7,
+            -1,
+            8,
+            -1,
+            -1,
+            9,
+            10,
+            -1,
+            -1,
+            11,
+            -1,
+            -1,
+            12,
+            13,
+            -1,
+            14,
+            15,
+            -1,
+            16,
+            17,
+            -1,
+            18,
+            19,
+            20,
+            21,
+            22,
+            -1,
+            23,
+            24,
+            -1,
+            25,
+            26,
+            -1,
+            -1,
+            27,
+            -1,
+            28,
+            29,
+            30,
+            -1,
+            31,
+            32,
+            -1,
+            33,
+            -1,
+        )
         .inOrder()
   }
 
@@ -224,36 +653,39 @@ class TokenizerTest {
   fun `Unclosed comment obvious`() {
     assertParseError(
         """
-      |package a.b
-      |/*
-      |class A {}
-      |"""
+        |package a.b
+        |/*
+        |class A {}
+        |"""
             .trimMargin(),
-        "2:1: error: Unclosed comment")
+        "2:1: error: Unclosed comment",
+    )
   }
 
   @Test
   fun `Unclosed comment too short`() {
     assertParseError(
         """
-      |package a.b
-      |/*/
-      |class A {}
-      |"""
+        |package a.b
+        |/*/
+        |class A {}
+        |"""
             .trimMargin(),
-        "2:1: error: Unclosed comment")
+        "2:1: error: Unclosed comment",
+    )
   }
 
   @Test
   fun `Unclosed comment nested`() {
     assertParseError(
         """
-      |package a.b
-      |/* /* */
-      |class A {}
-      |"""
+        |package a.b
+        |/* /* */
+        |class A {}
+        |"""
             .trimMargin(),
-        "2:1: error: Unclosed comment")
+        "2:1: error: Unclosed comment",
+    )
   }
 
   @Test
@@ -261,11 +693,12 @@ class TokenizerTest {
     // TODO: https://youtrack.jetbrains.com/issue/KT-72887 - This should be an error.
     assertParseError(
         """
-      |package a.b
-      |class A {}
-      |/* /* */"""
+        |package a.b
+        |class A {}
+        |/* /* */"""
             .trimMargin(),
-        null)
+        null,
+    )
   }
 
   private fun assertParseError(code: String, message: String?) {
