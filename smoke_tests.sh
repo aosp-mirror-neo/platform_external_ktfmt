@@ -19,21 +19,18 @@ set -e
 SCRIPT=$(readlink -f "$0")
 # Absolute path this script is in, thus /home/user/ktfmt/
 ROOT_DIR=$(dirname "$SCRIPT")
-
-echo "Testing ktfmt core library"
-echo
 cd "$ROOT_DIR"
-mvn install spotless:check
-echo
+
+./gradlew clean
 
 echo "Testing ktfmt IDEA plugin"
-echo
-cd "$ROOT_DIR/ktfmt_idea_plugin"
-./gradlew :build
+./gradlew :idea_plugin:build
 echo
 
 echo "Testing online formatter"
+./gradlew :lambda:build
 echo
-cd "$ROOT_DIR/online_formatter"
-./gradlew :build
+
+echo "Testing ktfmt core library"
+./gradlew :ktfmt:build
 echo

@@ -17,44 +17,53 @@ on:
         required: true
         type: string
 jobs:
-  publish:
+  publish_ide_plugin:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.events.release.tag_name || inputs.release_tag || github.ref }}
-      - name: Set up Maven Central Repository
-        uses: actions/setup-java@v4
+
+      - name: Publish IntelliJ plugin to JetBrains Marketplace
+        run: ./gradlew :idea_plugin:publishPlugin --stacktrace --no-daemon
+        env:
+          JETBRAINS_MARKETPLACE_TOKEN: ${{ secrets.JETBRAINS_MARKETPLACE_TOKEN }}
+
+  publish_maven_artifacts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
         with:
-          java-version: 17
-          server-id: ossrh
-          server-username: MAVEN_USERNAME
-          server-password: MAVEN_PASSWORD
-          distribution: zulu
+          ref: ${{ github.events.release.tag_name || inputs.release_tag || github.ref }}
+
       - id: install-secret-key
         name: Install gpg secret key
         run: |
           cat <(echo -e "${{ secrets.OSSRH_GPG_SECRET_KEY }}") | gpg --batch --import
           gpg --list-secret-keys --keyid-format LONG
+
       - id: publish-to-central
         name: Publish to Maven Central Repository
         env:
-          MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
-          MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
+          SIGN_BUILD: true
+          OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
+          OSSRH_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
+          GPG_PASSPHRASE: ${{ secrets.OSSRH_GPG_SECRET_KEY_PASSWORD }}
         run: |
-          mvn \
-            --no-transfer-progress \
-            --batch-mode \
-            -Dgpg.passphrase=${{ secrets.OSSRH_GPG_SECRET_KEY_PASSWORD }} \
-            -Prelease clean deploy
-      - name: Publish IntelliJ plugin to JetBrains Marketplace
-        run: |
-          pushd ktfmt_idea_plugin
-          ./gradlew publishPlugin --stacktrace --no-daemon
-          popd
-        env:
-          JETBRAINS_MARKETPLACE_TOKEN: ${{ secrets.JETBRAINS_MARKETPLACE_TOKEN }}
+          ./gradlew :ktfmt:publish closeAndReleaseStagingRepositories \
+              --stacktrace \
+              --no-daemon \
+              -Psigning.gnupg.passphrase="$GPG_PASSPHRASE"
+
+  deploy_website:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.events.release.tag_name || inputs.release_tag || github.ref }}
+
       - uses: actions/setup-node@v4
+
       - name: Deploy website
         run: |
           KTFMT_TMP_DIR=$(mktemp -d)
