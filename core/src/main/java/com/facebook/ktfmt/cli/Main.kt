@@ -37,19 +37,19 @@ private const val EXIT_CODE_SUCCESS = 0
 
 private val USAGE =
     """
-        |Usage:
-        |  ktfmt [OPTIONS] File1.kt File2.kt ...
-        |  ktfmt @ARGFILE
-        |
-        |For more details see `ktfmt --help`
-        |"""
+    |Usage:
+    |  ktfmt [OPTIONS] File1.kt File2.kt ...
+    |  ktfmt @ARGFILE
+    |
+    |For more details see `ktfmt --help`
+    |"""
         .trimMargin()
 
 class Main(
     private val input: InputStream,
     private val out: PrintStream,
     private val err: PrintStream,
-    private val inputArgs: Array<String>
+    private val inputArgs: Array<String>,
 ) {
   companion object {
     @JvmStatic
@@ -72,7 +72,8 @@ class Main(
         result.addAll(
             File(arg).walkTopDown().filter {
               it.isFile && (it.extension == "kt" || it.extension == "kts")
-            })
+            }
+        )
       }
       return result
     }

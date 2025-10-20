@@ -14,4 +14,13 @@
  * limitations under the License.
  */
 
-rootProject.name = "lambda"
+@file:Suppress("IncorrectPackageName", "PackageDirectoryMismatch")
+
+package com.facebook.ktfmt.util
+
+import org.jetbrains.kotlin.psi.KtContextReceiverList
+import org.jetbrains.kotlin.psi.KtElement
+
+fun KtContextReceiverList.listToVisit(): List<KtElement> {
+  return contextReceivers()
+}

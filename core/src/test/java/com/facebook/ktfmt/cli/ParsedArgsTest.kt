@@ -153,6 +153,25 @@ class ParsedArgsTest {
   }
 
   @Test
+  fun `parseOptions recognises --version`() {
+    val parseResult = ParsedArgs.parseOptions(arrayOf("--version"))
+    assertThat(parseResult).isInstanceOf(ParseResult.ShowMessage::class.java)
+  }
+
+  @Test
+  fun `parseOptions recognises -v`() {
+    val parseResult = ParsedArgs.parseOptions(arrayOf("-v"))
+    assertThat(parseResult).isInstanceOf(ParseResult.ShowMessage::class.java)
+  }
+
+  @Test
+  fun `arg --version overrides all others`() {
+    val parseResult =
+        ParsedArgs.parseOptions(arrayOf("--style=google", "@unknown", "--version", "file.kt"))
+    assertThat(parseResult).isInstanceOf(ParseResult.ShowMessage::class.java)
+  }
+
+  @Test
   fun `processArgs use the @file option with non existing file`() {
     val e =
         assertFailsWith<FileNotFoundException> {
@@ -190,7 +209,8 @@ class ParsedArgsTest {
                 formattingOptions = Formatter.GOOGLE_FORMAT,
                 dryRun = true,
                 setExitIfChanged = true,
-            ))
+            )
+        )
   }
 
   @Test
@@ -202,7 +222,8 @@ class ParsedArgsTest {
             parseResultOk(
                 fileNames = listOf("File.kt"),
                 formattingOptions = Formatter.KOTLINLANG_FORMAT,
-            ))
+            )
+        )
   }
 
   @Test
@@ -222,11 +243,12 @@ class ParsedArgsTest {
       dryRun: Boolean = false,
       setExitIfChanged: Boolean = false,
       removedUnusedImports: Boolean = true,
-      stdinName: String? = null
+      stdinName: String? = null,
   ): ParseResult.Ok {
     val returnedFormattingOptions =
         formattingOptions.copy(removeUnusedImports = removedUnusedImports)
     return ParseResult.Ok(
-        ParsedArgs(fileNames, returnedFormattingOptions, dryRun, setExitIfChanged, stdinName))
+        ParsedArgs(fileNames, returnedFormattingOptions, dryRun, setExitIfChanged, stdinName)
+    )
   }
 }

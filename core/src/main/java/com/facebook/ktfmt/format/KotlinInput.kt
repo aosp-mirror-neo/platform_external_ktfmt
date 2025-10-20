@@ -83,7 +83,9 @@ class KotlinInput(private val text: String, file: KtFile) : Input() {
       tokenRangeSet.add(
           characterRangeToTokenRange(
               characterRange.lowerEndpoint(),
-              characterRange.upperEndpoint() - characterRange.lowerEndpoint()))
+              characterRange.upperEndpoint() - characterRange.lowerEndpoint(),
+          )
+      )
     }
     return tokenRangeSet
   }
@@ -104,7 +106,9 @@ class KotlinInput(private val text: String, file: KtFile) : Input() {
           String.format(
               "error: invalid length %d, offset + length (%d) is outside the file",
               length,
-              requiredLength))
+              requiredLength,
+          )
+      )
     }
     val expandedLength =
         when {
@@ -121,7 +125,9 @@ class KotlinInput(private val text: String, file: KtFile) : Input() {
       EMPTY_RANGE
     } else
         Range.closedOpen(
-            enclosed.iterator().next().tok.index, getLast(enclosed).getTok().getIndex() + 1)
+            enclosed.iterator().next().tok.index,
+            getLast(enclosed).getTok().getIndex() + 1,
+        )
   }
 
   private fun makePositionToColumnMap(toks: List<KotlinTok>) =

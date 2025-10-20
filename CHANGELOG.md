@@ -10,7 +10,54 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 - All styles managing trailing commas now (https://github.com/facebook/ktfmt/issues/216, https://github.com/facebook/ktfmt/issues/442)
 
 
-## [Unreleased]
+## [0.58]
+
+### Changed
+- Updated ShadowJar to 9.0.2 (https://github.com/facebook/ktfmt/pull/555)
+
+### Fixed
+- Do not apply special format handling of multiline strings with template expressions in them (https://github.com/facebook/ktfmt/issues/556)
+- Make sure that we handle nested expressions for special format handling of multiline strings
+
+
+## [0.57]
+
+### Added
+- `TrailingCommaManagementStrategy.ONLY_ADD` strategy that does not remove existing trailing commas (https://github.com/facebook/ktfmt/issues/461, https://github.com/facebook/ktfmt/issues/512, https://github.com/facebook/ktfmt/issues/514)
+- Formatting of where clauses (https://github.com/facebook/ktfmt/issues/541)
+- Special format handling of multiline strings with `trimMargin()` and `trimIndent()` (https://github.com/facebook/ktfmt/issues/389)
+
+### Changed
+- `FormattingOptions.manageTrailingCommas` was replaced with `FormattingOptions.trailingCommaManagementStrategy`, which also added new `TrailingCommaManagementStrategy.ONLY_ADD` strategy (https://github.com/facebook/ktfmt/issues/461, https://github.com/facebook/ktfmt/issues/512, https://github.com/facebook/ktfmt/issues/514)
+- All styles managing trailing commas by default now (https://github.com/facebook/ktfmt/issues/216, https://github.com/facebook/ktfmt/issues/442)
+
+### Removed
+- Removed mvn build scripts
+
+### Fixed
+- Corrected reference to jar in formatter website's command line instructions https://facebook.github.io/ktfmt/
+- Trailing comma on when cases (https://github.com/facebook/ktfmt/issues/376)
+- Update idea plugin name to avoid collision with google-java-format (https://github.com/facebook/ktfmt/issues/553)
+
+## [0.56]
+
+### Changed
+- Update to Kotlin 2.2.0 (https://github.com/facebook/ktfmt/commit/451be91d53aafcaae01cf0f7f3e389cfb8eefac3)
+
+
+## [0.55]
+
+### Added
+- Support guard conditions (https://github.com/facebook/ktfmt/issues/530, https://github.com/facebook/ktfmt/pull/537)
+- `--version` option in CLI (https://github.com/facebook/ktfmt/issues/534)
+
+### Changed
+- Update `kotlin-compiler-embeddable` to `2.2.0-Beta2` for forward compatibility with context parameters. (https://github.com/facebook/ktfmt/pull/538)
+- Moved ktfmt project to Gradle (away from Maven) (https://github.com/facebook/ktfmt/commit/d03a29e71ebf19873e8b9ac21d255c8f830ef00a)
+
+### Fixed
+- Support context parameters (https://github.com/facebook/ktfmt/issues/518, https://github.com/facebook/ktfmt/pull/536)
+- Indentation options in `.editorconfig-default` (https://github.com/facebook/ktfmt/issues/543)
 
 
 ## [0.53]

@@ -47,7 +47,7 @@ object Formatter {
       FormattingOptions(
           blockIndent = 2,
           continuationIndent = 4,
-          manageTrailingCommas = false,
+          trailingCommaManagementStrategy = TrailingCommaManagementStrategy.ONLY_ADD,
       )
 
   @JvmField
@@ -102,8 +102,9 @@ object Formatter {
         .let { convertLineSeparators(it) }
         .let { sortedAndDistinctImports(it) }
         .let { dropRedundantElements(it, options) }
-        .let { prettyPrint(it, options, "\n") }
+        .let { prettyPrint(it, options, lineSeparator = "\n") }
         .let { addRedundantElements(it, options) }
+        .let { MultilineStringFormatter(options.continuationIndent).format(it) }
         .let { convertLineSeparators(it, checkNotNull(Newlines.guessLineSeparator(kotlinCode))) }
         .let { if (shebang.isEmpty()) it else shebang + "\n" + it }
   }
@@ -130,7 +131,8 @@ object Formatter {
     val tokenRangeSet =
         kotlinInput.characterRangesToTokenRanges(ImmutableList.of(Range.closedOpen(0, code.length)))
     return WhitespaceTombstones.replaceTombstoneWithTrailingWhitespace(
-        JavaOutput.applyReplacements(code, javaOutput.getFormatReplacements(tokenRangeSet)))
+        JavaOutput.applyReplacements(code, javaOutput.getFormatReplacements(tokenRangeSet))
+    )
   }
 
   private fun createAstVisitor(options: FormattingOptions, builder: OpsBuilder): PsiElementVisitor {
@@ -149,7 +151,8 @@ object Formatter {
       throw ParseError(
           "ktfmt does not support code which contains one of {\\u0003, \\u0004, \\u0005} character" +
               "; escape it",
-          StringUtil.offsetToLineColumn(code, index))
+          StringUtil.offsetToLineColumn(code, index),
+      )
     }
   }
 
@@ -171,7 +174,8 @@ object Formatter {
       } else if (element !is KtImportDirective && element !is PsiWhiteSpace) {
         throw ParseError(
             "Imports not contiguous: " + element.text,
-            StringUtil.offsetToLineColumn(code, element.startOffset))
+            StringUtil.offsetToLineColumn(code, element.startOffset),
+        )
       }
       element = element.nextSibling
     }
@@ -188,6 +192,7 @@ object Formatter {
     return code.replaceRange(
         importList.startOffset,
         importList.endOffset,
-        importsWithComments.joinToString(separator = "\n") { imprt -> imprt.text } + "\n")
+        importsWithComments.joinToString(separator = "\n") { imprt -> imprt.text } + "\n",
+    )
   }
 }

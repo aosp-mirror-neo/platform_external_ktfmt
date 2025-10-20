@@ -14,4 +14,8 @@
  * limitations under the License.
  */
 
-rootProject.name = "ktfmt_idea_plugin"
+package com.facebook.ktfmt.util
+
+object Ktfmt {
+  const val version = "0.57"
+}
