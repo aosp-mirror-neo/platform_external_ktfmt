@@ -14,6 +14,7 @@ third_party {
   identifier {
     type: "Git"
     value: "https://github.com/facebookincubator/ktfmt.git"
-    version: "v0.58"
+    version: "64727bdd5086020a8754c3fcb6bd3ec97d53272f"
+    closest_version: "v0.58"
   }
 }
