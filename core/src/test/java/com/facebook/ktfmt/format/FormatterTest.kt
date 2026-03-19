@@ -3139,7 +3139,8 @@ class FormatterTest {
     val before =
         """
         |val indent =
-        |    ${TQ}example
+        |    $TQ     
+        |         example
         |          of
         |            a
         |
@@ -3183,7 +3184,8 @@ class FormatterTest {
             |         .trimMargin()
             |)
             |   .bar(
-            |    ${TQ}example
+            |    ${TQ}
+            |         example
             |          of
             |            a
             |
@@ -3229,7 +3231,7 @@ class FormatterTest {
     assertThatFormatting(
             """
             |val margin =
-            |    $TQ
+            |    $TQ${"   "}
             |     |is this the end of the line?$TQ
             |        .trimMargin()
             |"""
@@ -3239,7 +3241,8 @@ class FormatterTest {
             """
             |val margin =
             |    $TQ
-            |    |is this the end of the line?$TQ
+            |    |is this the end of the line?
+            |    $TQ
             |        .trimMargin()
             |"""
                 .trimMargin()
@@ -3248,7 +3251,7 @@ class FormatterTest {
     assertThatFormatting(
             """
             |val margin =
-            |    $TQ
+            |    $TQ${"   "}
             |     is this the end of the line?$TQ
             |        .trimIndent()
             |"""
@@ -3258,7 +3261,8 @@ class FormatterTest {
             """
             |val margin =
             |    $TQ
-            |    is this the end of the line?$TQ
+            |    is this the end of the line?
+            |    $TQ
             |        .trimIndent()
             |"""
                 .trimMargin()
@@ -3322,8 +3326,16 @@ class FormatterTest {
         |val margin =
         |    $TQ
         |    |my math = ${'$'}{
+        |      if (condition) {
         |      "}" + (1 + 2)
         |        .toString()
+        |      } else {
+        |        $TQ
+        |        my own multiline trimmed string
+        |        is here
+        |        $TQ
+        |            .trimIndent()
+        |      }
         |    }
         |    |     string
         |    |$TQ
@@ -3337,8 +3349,15 @@ class FormatterTest {
         |val margin =
         |    ${"$$"}$TQ
         |    |my math = ${"$$"}{
+        |      if (condition) {
         |      "}" + (1 + 2)
         |        .toString()
+        |      }else{
+        |        $TQ
+        |        my own multiline trimmed string
+        |        is here
+        |        $TQ.trimIndent()
+        |      }
         |    }
         |    |     string
         |    |$TQ
@@ -3368,7 +3387,8 @@ class FormatterTest {
             |    $TQ
             |    |   echo hello | wc -c
             |    |   cat hay_stack.txt | grep needle
-            |    |   {myList.joinToString("|")}$TQ
+            |    |   {myList.joinToString("|")}
+            |    $TQ
             |        .trimMargin()
             |"""
                 .trimMargin()
@@ -6721,6 +6741,47 @@ class FormatterTest {
 
     // Don't throw.
     Formatter.format(code)
+  }
+
+  // Regression test against https://github.com/facebook/ktfmt/issues/557
+  @Test
+  fun `empty companion object`() {
+    assertFormatted(
+        """
+        |class Foo {
+        |  val a: String
+        |
+        |  companion object;
+        |
+        |  init {
+        |    a = "Hello"
+        |  }
+        |}
+        |"""
+            .trimMargin()
+    )
+  }
+
+  // Regression test against https://github.com/facebook/ktfmt/issues/557
+  @Test
+  fun `empty companion object with nothing after`() {
+    val code =
+        """
+        |class Foo {
+        |  companion object;
+        |}
+        |"""
+            .trimMargin()
+
+    val expected =
+        """
+        |class Foo {
+        |  companion object
+        |}
+        |"""
+            .trimMargin()
+
+    assertThatFormatting(code).isEqualTo(expected)
   }
 
   @Test
