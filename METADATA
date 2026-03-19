@@ -7,14 +7,14 @@ description: "A formatter for Kotlin code."
 third_party {
   license_type: NOTICE
   last_upgrade_date {
-    year: 2025
-    month: 9
-    day: 5
+    year: 2026
+    month: 3
+    day: 19
   }
   identifier {
     type: "Git"
     value: "https://github.com/facebookincubator/ktfmt.git"
-    version: "64727bdd5086020a8754c3fcb6bd3ec97d53272f"
-    closest_version: "v0.58"
+    version: "e83c7c9b253bf8aadd07a7ecab95ed67b2ee7521"
+    closest_version: "v0.59"
   }
 }
